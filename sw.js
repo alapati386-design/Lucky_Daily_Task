@@ -1,6 +1,6 @@
 // ── Lucky Service Worker ─────────────────────────────────────────────────────
 // Bump cache name on every release so users get fresh files.
-const CACHE_NAME = 'lucky-v1';
+const CACHE_NAME = 'lucky-v2';
 
 const APP_SHELL = [
   '/',

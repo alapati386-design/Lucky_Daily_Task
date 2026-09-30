@@ -5,7 +5,6 @@ import {
   collection,
   doc,
   setDoc,
-  updateDoc,
   deleteDoc,
   onSnapshot,
   query,
@@ -36,9 +35,11 @@ function setSyncBar(visible, text = 'Syncing...') {
 }
 
 // Show sync-fail toast briefly
-function showSyncFail() {
+function showSyncFail(err) {
   const toast = document.getElementById('syncFailToast');
   if (!toast) return;
+  const txt = document.getElementById('syncFailText');
+  if (txt) txt.textContent = 'Sync failed — retrying' + (err && err.code ? ' (' + err.code + ')' : '');
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3500);
 }
@@ -111,7 +112,7 @@ export function onTasksChange(callback) {
     err => {
       console.error('Lucky: Firestore snapshot error', err);
       setSyncBar(false);
-      showSyncFail();
+      showSyncFail(err);
     }
   );
 }
@@ -119,35 +120,35 @@ export function onTasksChange(callback) {
 // Add a new task document
 export async function addTask(task) {
   const ref = tasksRef();
-  if (!ref) { showSyncFail(); return; }
+  if (!ref) { showSyncFail({ code: 'not-signed-in' }); return; }
   try {
     await setDoc(doc(ref, task.id), task);
   } catch (err) {
     console.error('Lucky: addTask failed', err);
-    showSyncFail();
+    showSyncFail(err);
   }
 }
 
 // Update specific fields on an existing task
 export async function updateTask(id, fields) {
   const ref = tasksRef();
-  if (!ref) { showSyncFail(); return; }
+  if (!ref) { showSyncFail({ code: 'not-signed-in' }); return; }
   try {
-    await updateDoc(doc(ref, id), fields);
+    await setDoc(doc(ref, id), fields, { merge: true });
   } catch (err) {
     console.error('Lucky: updateTask failed', err);
-    showSyncFail();
+    showSyncFail(err);
   }
 }
 
 // Delete a task document
 export async function deleteTask(id) {
   const ref = tasksRef();
-  if (!ref) { showSyncFail(); return; }
+  if (!ref) { showSyncFail({ code: 'not-signed-in' }); return; }
   try {
     await deleteDoc(doc(ref, id));
   } catch (err) {
     console.error('Lucky: deleteTask failed', err);
-    showSyncFail();
+    showSyncFail(err);
   }
 }

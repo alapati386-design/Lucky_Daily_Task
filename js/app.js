@@ -674,12 +674,16 @@ function checkReminders() {
       if (t.recurrence === 'daily' || t.recurrence === 'weekly') {
         const next = new Date(t.reminderAt);
         next.setDate(next.getDate() + (t.recurrence === 'daily' ? 1 : 7));
+        t.reminderAt = next.toISOString();
+        t.forcedPending = true;
         fbUpdateTask(t.id, {
-          reminderAt: next.toISOString(),
+          reminderAt: t.reminderAt,
           reminderFired: false,
           forcedPending: true
         });
       } else {
+        t.reminderFired = true;
+        t.forcedPending = true;
         fbUpdateTask(t.id, { reminderFired: true, forcedPending: true });
       }
       showReminderBanner(t.text, t.id);
