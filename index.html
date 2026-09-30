@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Lucky</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4C5FD5">
+<meta name="background-color" content="#EEF1F4">
+
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lucky">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- PWA Launch Screen — shown only when installed as PWA -->
+<div class="launch-screen hidden" id="launchScreen">
+  <button class="launch-mic-btn" id="launchMicBtn" aria-label="Tap to start">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+      <line x1="12" y1="19" x2="12" y2="23"></line>
+      <line x1="8" y1="23" x2="16" y2="23"></line>
+    </svg>
+  </button>
+  <div class="launch-name">Lucky<span>.</span></div>
+  <div class="launch-sub">Daily Tasks</div>
+  <div class="launch-hint">Tap to start</div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="brand-name">Lucky<span>.</span></div>
+        <div class="brand-tagline">Daily Tasks</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button id="installBtn" class="hidden btn-install">Install app</button>
+      <select class="lang-select" id="langSelect">
+        <option value="te-IN">Telugu</option>
+        <option value="en-IN">English</option>
+        <option value="hi-IN">Hindi</option>
+      </select>
+      <button class="icon-btn" id="darkModeBtn" aria-label="Toggle dark mode" title="Dark mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      </button>
+      <button class="icon-btn" id="exportBtn" aria-label="Export backup" title="Export backup (JSON)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      </button>
+      <button class="icon-btn" id="importBtn" aria-label="Import backup" title="Import backup (JSON)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+      </button>
+      <input type="file" id="importFile" accept="application/json" class="hidden">
+    </div>
+  </header>
+
+  <!-- Sync status indicator -->
+  <div class="sync-bar hidden" id="syncBar">
+    <div class="spinner"></div><span id="syncBarText">Syncing...</span>
+  </div>
+
+  <div class="filters sub-filters" id="reminderDateFilters">
+    <button class="active" data-rfilter="all">All</button>
+    <button data-rfilter="yesterday">Yesterday</button>
+    <button data-rfilter="today">Today</button>
+    <button data-rfilter="tomorrow">Tomorrow</button>
+  </div>
+
+  <div class="reminder-banner" id="installHelpBanner">
+    <span id="installHelpText"></span>
+    <button id="installHelpDismiss">Got it</button>
+  </div>
+
+  <div class="reminder-banner" id="reminderBanner">
+    <span id="reminderBannerText"></span>
+    <button id="reminderSnooze">Snooze 10m</button>
+    <button id="reminderDismiss">Dismiss</button>
+  </div>
+
+  <div class="undo-toast" id="undoToast">
+    <span id="undoToastText">Task deleted</span>
+    <button id="undoBtn">Undo</button>
+  </div>
+
+  <!-- Sync failed toast -->
+  <div class="undo-toast sync-fail-toast" id="syncFailToast">
+    <span>Sync failed — retrying</span>
+  </div>
+
+  <div class="tabs">
+    <button class="active" data-tab="tasks">Tasks</button>
+    <button data-tab="report">Report</button>
+  </div>
+
+  <div id="tasksView">
+    <div class="mic-zone">
+      <button class="mic-btn" id="micBtn" aria-label="Start recording">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+      </button>
+      <div class="mic-label" id="micLabel">Tap to speak</div>
+      <div class="mic-sub" id="micSub">Telugu, English or Hindi lo cheppandi — tap chesaka aagatundi</div>
+      <button class="voice-cmd-btn" id="voiceCmdBtn" title="Say: Hey Lucky reminders, add task..., mark done..., delete...">🎙 Hey Lucky</button>
+      <div class="live-text" id="liveText"></div>
+
+      <textarea class="transcript-box" id="transcriptBox" placeholder="Your speech appears here — you can type or fix it too..."></textarea>
+      <div class="transcript-actions">
+        <button class="btn-outline" id="clearTranscriptBtn">Clear</button>
+        <button class="btn-solid" id="translateBtn">Translate</button>
+      </div>
+
+      <div class="translated-box hidden" id="translatedBox">
+        <div class="translated-label">English</div>
+        <textarea class="translated-text" id="translatedText" readonly></textarea>
+        <div class="reminder-row">
+          <label for="reminderInput" class="reminder-row-label">⏰ Remind</label>
+          <input type="datetime-local" id="reminderInput">
+          <select id="reminderRecur">
+            <option value="none">No repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+        <div class="translated-actions">
+          <button class="btn-outline" id="cancelTranslatedBtn">Cancel</button>
+          <button class="btn-outline" id="editTranslatedBtn">Edit</button>
+          <button class="btn-outline" id="copyTranslatedBtn">Copy</button>
+          <button class="btn-solid btn-add" id="addTaskBtn">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="translatingRow"></div>
+
+    <input type="search" class="search-input" id="searchInput" placeholder="🔍 Search tasks...">
+
+    <div class="filters">
+      <button class="active" data-filter="all">All</button>
+      <button data-filter="pending">Pending</button>
+      <button data-filter="reminders">Reminders</button>
+      <button data-filter="done">Done</button>
+    </div>
+
+    <div class="task-list" id="taskList"></div>
+    <div class="empty hidden" id="emptyState">Nothing here yet. Tap the mic and say something.</div>
+  </div>
+
+  <div id="reportView" class="hidden">
+    <div class="report-controls">
+      <select id="reportRange">
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="0">All time</option>
+      </select>
+      <button id="printReportBtn">Print</button>
+      <button id="copyReportBtn">Copy</button>
+    </div>
+    <div class="report-summary" id="reportSummary"></div>
+    <div id="reportGroups"></div>
+    <div class="empty hidden" id="reportEmpty">No tasks in this range yet.</div>
+  </div>
+</div>
+
+<!-- Runtime config — injected by Render at serve time -->
+<script>
+  window.LUCKY_API_KEY = '%%LUCKY_API_KEY%%';
+  window.FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyCcA82K5wP8e7_QbuKgjBbaYoosDZzasRY',
+    authDomain: 'lucky-daily-task.firebaseapp.com',
+    projectId: 'lucky-daily-task',
+    storageBucket: 'lucky-daily-task.firebasestorage.app',
+    messagingSenderId: '727310375587',
+    appId: '1:727310375587:web:85cacb2291761cb928fd16',
+    measurementId: 'G-JLDTM0HZKR'
+  };
+</script>
+
+<script type="module" src="js/firebase.js"></script>
+<script type="module" src="js/translate.js"></script>
+<script type="module" src="js/speech.js"></script>
+<script type="module" src="js/app.js"></script>
+<script src="js/sw-register.js" defer></script>
+</body>
+</html>
