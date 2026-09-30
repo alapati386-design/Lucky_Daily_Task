@@ -1,49 +1,41 @@
-// API key injected at deploy time via window.LUCKY_API_KEY
-const API_KEY = window.LUCKY_API_KEY || '';
-if (!API_KEY || API_KEY === '%%LUCKY_API_KEY%%') {
-  console.warn('Lucky: No Anthropic API key set — translation will fail. Set LUCKY_API_KEY in Render env vars.');
+// Keyless translation: Google web endpoint first, MyMemory as fallback.
+// Returns { text: string, ok: boolean } — same contract as before.
+
+async function viaGoogle(text) {
+  const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q='
+    + encodeURIComponent(text);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('google http ' + res.status);
+  const data = await res.json();
+  const out = (data[0] || []).map(seg => seg[0]).join('').trim();
+  if (!out) throw new Error('google empty');
+  return out;
 }
 
-// Translates Telugu/Hindi/Tenglish → English AND fixes grammar in one call.
-// Returns { text: string, ok: boolean }
+async function viaMyMemory(text, srcLang) {
+  const src = srcLang && srcLang !== 'auto' ? srcLang : 'te';
+  const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text)
+    + '&langpair=' + encodeURIComponent(src + '|en');
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('mymemory http ' + res.status);
+  const data = await res.json();
+  const out = ((data.responseData || {}).translatedText || '').trim();
+  if (!out || data.responseStatus !== 200) throw new Error('mymemory bad response');
+  return out;
+}
+
 export async function translateToEnglish(text, sourceLang) {
+  // English input: nothing to translate, keep as typed/spoken.
+  if (sourceLang === 'en') return { text, ok: true };
   try {
-    const langHint = sourceLang && sourceLang !== 'auto'
-      ? `The input is in ${sourceLang} (could be Telugu, Hindi, Tenglish/mixed, or English).`
-      : 'The input may be Telugu, Hindi, Tenglish (Telugu+English mixed), or English.';
-
-    const prompt = `You are a translation and grammar assistant.
-${langHint}
-Translate the following text into clear, natural English.
-If it is already in English, just fix any grammar or spelling errors.
-Reply with ONLY the translated/corrected English text — no explanations, no quotes, no extra lines.
-
-Input: ${text}`;
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if (!res.ok) throw new Error('API HTTP ' + res.status);
-
-    const data = await res.json();
-    const out = (data.content || []).find(b => b.type === 'text');
-    const translated = out ? out.text.trim() : text;
-    return { text: translated || text, ok: true };
-
-  } catch (e) {
-    console.error('Lucky: Translation failed', e);
-    return { text, ok: false };
+    return { text: await viaGoogle(text), ok: true };
+  } catch (e1) {
+    console.warn('Lucky: Google translate failed, trying MyMemory', e1);
+    try {
+      return { text: await viaMyMemory(text, sourceLang), ok: true };
+    } catch (e2) {
+      console.error('Lucky: Translation failed', e2);
+      return { text, ok: false };
+    }
   }
 }

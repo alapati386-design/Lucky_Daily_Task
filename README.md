@@ -13,12 +13,11 @@ lucky/
 ├── js/
 │   ├── app.js              ← Main logic, render, filters, Firebase integration
 │   ├── speech.js           ← Mic, speech recognition, TTS, voice commands
-│   ├── translate.js        ← Anthropic API translation
+│   ├── translate.js        ← Keyless translation (Google web endpoint, MyMemory fallback)
 │   ├── firebase.js         ← Firestore CRUD + anonymous auth
 │   └── sw-register.js      ← Service worker registration
 ├── sw.js                   ← Service worker (cache: lucky-v1)
-├── manifest.json           ← PWA manifest
-└── .env.example            ← Required environment variables template
+└── manifest.json           ← PWA manifest
 ```
 
 ---
@@ -35,11 +34,7 @@ lucky/
 
 ## Environment Variables
 
-Only ONE env var is needed on Render (Firebase config is already in the HTML):
-
-| Variable | Value |
-|---|---|
-| `LUCKY_API_KEY` | Your Anthropic API key from [console.anthropic.com](https://console.anthropic.com) |
+None. No API keys are needed.
 
 ---
 
@@ -62,16 +57,9 @@ Only ONE env var is needed on Render (Firebase config is already in the HTML):
    - Publish directory: `.` (root)
    - Build command: *(leave empty)*
 
-3. **Add environment variable:**
-   - Go to your site → **Environment** tab
-   - Add: `LUCKY_API_KEY` = your Anthropic key
+3. Click **Deploy** — done ✅
 
-4. **How key injection works:**
-   - `index.html` contains: `window.LUCKY_API_KEY = '%%LUCKY_API_KEY%%';`
-   - Render replaces `%%LUCKY_API_KEY%%` with the real value at serve time
-   - Your key never appears in the GitHub repo
-
-5. Click **Deploy** — done ✅
+4. In Firebase → Authentication → Settings → Authorized domains, add your `onrender.com` domain.
 
 ---
 
@@ -89,7 +77,6 @@ npx serve .
 
 Then open `http://localhost:8080`
 
-For translation to work locally, temporarily replace `%%LUCKY_API_KEY%%` in index.html with your real key. **Don't commit that change.**
 
 ---
 
@@ -105,7 +92,7 @@ For translation to work locally, temporarily replace `%%LUCKY_API_KEY%%` in inde
 
 - Vanilla JS (ES modules), no framework
 - Firebase v10 (Firestore + Anonymous Auth)
-- Anthropic API (claude-sonnet-4-6) for translation
+- Keyless translation (Google web endpoint + MyMemory fallback)
 - Web Speech API for mic + TTS
 - PWA (service worker, manifest, installable)
 - Hosted on Render (Static Site)

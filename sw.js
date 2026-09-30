@@ -21,7 +21,8 @@ const APP_SHELL = [
 
 // Skip caching for these external origins
 const SKIP_ORIGINS = [
-  'api.anthropic.com',
+  'translate.googleapis.com',
+  'api.mymemory.translated.net',
   'firestore.googleapis.com',
   'identitytoolkit.googleapis.com',
   'securetoken.googleapis.com',
